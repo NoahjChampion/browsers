@@ -71,13 +71,13 @@ The best way to find out what classes are added is to use a source code inspecto
 
 You can then use these new classes to select HTML elements in the following way ( again using IE 10 as an example ):
 
-~~ style.css ~~
+style.css
 
 body.browsers-msie-10 {
 	background-color: red;
 }
 
-~~~~~~~~~~~~
+--------------
 
 ## Screenshots ##
 
