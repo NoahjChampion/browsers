@@ -73,9 +73,9 @@ You can then use these new classes to select HTML elements in the following way 
 
 style.css
 
-body.browsers-msie-10 {
+`body.browsers-msie-10 {
 	background-color: red;
-}
+}`
 
 --------------
 
