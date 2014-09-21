@@ -2,8 +2,8 @@
 **Contributors:** qlstudio  
 **Tags:** css, browsers, clients, stylesheets, conditional, ie, explorer, hacks  
 **Requires at least:** 3.2  
-**Tested up to:** 3.8.1  
-**Stable tag:** 0.4.3  
+**Tested up to:** 4.0.0  
+**Stable tag:** 0.4.5  
 **License:** GPLv2  
 
 Add conditional browser stylesheets and body class declarations
@@ -82,6 +82,12 @@ style.css
 ## Screenshots ##
 
 ## Changelog ##
+
+### 0.4.5 ###
+* WP 4.0 Testing
+
+### 0.4.4 ###
+* 3.9.1 Testing
 
 ### 0.4.3 ###
 * 3.8.1 Testing
