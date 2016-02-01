@@ -3,7 +3,7 @@ Contributors: qlstudio
 Tags: css, browsers, clients, stylesheets, conditional, ie, explorer, hacks
 Requires at least: 3.2
 Tested up to: 4.4.1
-Stable tag: 0.4.7
+Stable tag: 0.4.8
 License: GPLv2
 
 Add conditional browser stylesheets and body class declarations
@@ -80,6 +80,9 @@ body.browsers-msie-10 {
 == Screenshots ==
 
 == Changelog ==
+
+= 0.4.8 =
+* added a php api wrapper function for use in templates is_browsers()
 
 = 0.4.7 =
 * readme update

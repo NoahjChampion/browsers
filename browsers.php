@@ -4,7 +4,7 @@
 Plugin Name: Conditional Stylesheets and Body Classes
 Plugin URI: http://qstudio.us/plugins/
 Description: Add conditional browser stylesheets and body class declarations
-Version: 0.4.7
+Version: 0.4.8
 Author: Q Studio
 Author URI: https://qstudio.us/
 License: GPL2
@@ -17,19 +17,27 @@ Instance: $q_browsers
 defined( 'ABSPATH' ) OR exit;
 
 // define constants ##
-define( 'Q_BROWSERS_VERSION', '0.4.7' ); // version ##
+define( 'Q_BROWSERS_VERSION', '0.4.8' ); // version ##
 define( 'Q_BROWSERS_PATH', dirname(__FILE__) );
 
-if ( !class_exists( "Q_Browsers" ) ) {
+if ( ! class_exists( "Q_Browsers" ) ) {
     
     // instatiate plugin via WP init ##
     add_action( 'wp_enqueue_scripts', array ( 'Q_Browsers', 'init' ), 1 );
+            
+    // activation ##
+    register_activation_hook( __FILE__, array ( 'Q_Browsers', 'register_activation_hook' ) );
     
+    // deactivation ##
+    register_deactivation_hook( __FILE__, array ( 'Q_Browsers', 'register_deactivation_hook' ) );
+
+    // declare class ##
     class Q_Browsers {
     
         // variables ##
         public $comment_log = array();
         public $useragent;
+        public static $light_load = false; // load all or not ##
         
         
         /**
@@ -49,21 +57,15 @@ if ( !class_exists( "Q_Browsers" ) ) {
 	    *
 	    * @since   0.2
 	    **/
-	    public function __construct() {
-            
-            // activation ##
-            register_activation_hook( __FILE__, array ( $this, 'register_activation_hook' ) );
-            
-            // deactivation ##
-            register_deactivation_hook( __FILE__, array ( $this, 'register_deactivation_hook' ) );
-            
-            // uninstall ##
-            // TODO ##
+	    public function __construct( $light = false ) {
             
             // load in mobile detect class ##
-            if ( !class_exists('Mobile_Detect') ) {
+            if ( ! class_exists('Mobile_Detect') ) {
                 include( Q_BROWSERS_PATH . '/library/mobile_detect.php');	
             }
+
+            // set mode ##
+            self::$light_load = $light;
 
             // instatiate class ##
             $this->detect = new Mobile_Detect();
@@ -72,26 +74,23 @@ if ( !class_exists( "Q_Browsers" ) ) {
             // grab user agent ##
             $this->useragent = $_SERVER['HTTP_USER_AGENT'] ? $_SERVER['HTTP_USER_AGENT'] : false;
             
+            // text-domain ##
+            add_action ( 'plugins_loaded', array ( $this, 'load_plugin_textdomain' ), 1 );
+
+            // plugin URL ##
+            $this->plugin_URL = WP_PLUGIN_URL.'/'.dirname(plugin_basename(__FILE__));
+            $this->plugin_dir_path = plugin_dir_url(__FILE__);
+
+            // admin ##
             if ( is_admin() ) {
                 
-                // text-domain ##
-                add_action ( 'plugins_loaded', array ( $this, 'load_plugin_textdomain' ), 1 );
                 
-                // plugin URL ##
-                $this->plugin_URL = WP_PLUGIN_URL.'/'.dirname(plugin_basename(__FILE__));
-                $this->plugin_dir_path = plugin_dir_url(__FILE__);
                 
             } else {
 
-                // conditional stylesheets for browser tweaks ##
-                add_action( 'wp_enqueue_scripts', array ( $this, 'enqueue_scripts_conditional' ), 10000000 ); // load them late ##
+                // hook into WP actions ##
+                $this->hooks();
 
-                // browser body_class ##
-                add_filter( 'body_class', array ( $this, 'body_classes' ), 1 );
-                
-                // comments ##
-                add_action( 'wp_footer', array ( $this, 'comments' ), 1000 );
-                
             }
                 
         }
@@ -137,6 +136,41 @@ if ( !class_exists( "Q_Browsers" ) ) {
             
             load_plugin_textdomain( 'q-browsers', false, basename( dirname( __FILE__ ) ) . '/languages' );
             
+        }
+
+
+        /*
+         * Hook into WP Actions
+         * 
+         * @since   0.4.8
+         */
+        public function hooks() {
+            
+            // not here ##
+            if ( self::$light_load ) { return false; }
+
+            // conditional stylesheets for browser tweaks ##
+            add_action( 'wp_enqueue_scripts', array ( $this, 'enqueue_scripts_conditional' ), 10000000 ); // load them late ##
+
+            // browser body_class ##
+            add_filter( 'body_class', array ( $this, 'body_classes' ), 1 );
+            
+            // comments ##
+            add_action( 'wp_footer', array ( $this, 'comments' ), 1000 );
+            
+        }
+        
+
+        /*
+         * light mode to run from front-end
+         * 
+         * @since   0.4.8
+         */
+        public static function light_mode() {
+
+            // update property ##
+            self::$light_load = true;
+
         }
         
         
@@ -231,23 +265,6 @@ if ( !class_exists( "Q_Browsers" ) ) {
                 $client_type = "opera";
             } elseif (stristr($this->useragent,"msie")) {
                 $client_type = "msie";
-            /*
-            } elseif (stristr($this->useragent,"msie 6")) {
-                $client_type = "msie";
-                $client_version = '6';
-            } elseif (stristr($this->useragent,"msie 7")) {
-                $client_type = "msie";
-                $client_version = '7';
-            } elseif (stristr($this->useragent,"msie 8")) {
-                $client_type = "msie";
-                $client_version = '8';
-            } elseif (stristr($this->useragent,"msie 9")) {
-                $client_type = "msie";
-                $client_version = '9';
-            } elseif (stristr($this->useragent,"msie 10")) {
-                $client_type = "msie";
-                $client_version = '10';
-             */
             } else {
                 $client_type = "other";
             }
@@ -275,9 +292,9 @@ if ( !class_exists( "Q_Browsers" ) ) {
             }
 
             return array(
-                'type'      => $client_type,
-                'agent'     => $client_agent,
-                'version'   => intval($client_version),
+                'type'              => $client_type,
+                'agent'             => $client_agent,
+                'version'           => intval($client_version),
                 'version_verbose'   => ($client_version)
             );
 
@@ -505,7 +522,7 @@ if ( !class_exists( "Q_Browsers" ) ) {
         * Wrapper function for detecting ANY touchscreen device
         ***************************************************************/
         public function is_touch() {
-            if ( defined( Q_RESPONSIVE_FORCE_TOUCH ) && Q_RESPONSIVE_FORCE_TOUCH === true ) { return true; }
+            if ( defined( Q_RESPONSIVE_FORCE_TOUCH ) && Q_RESPONSIVE_FORCE_TOUCH === true ) { return true; } // hack to bypass is_touch check ##
             return( $this->is_mobile() || $this->is_iphone() || $this->is_ipad() || $this->is_ipod() || $this->is_android() || $this->is_blackberry() || $this->is_opera_mobile() || $this->is_webos() || $this->is_symbian() || $this->is_windows_mobile() || $this->is_motorola() || $this->is_samsung() || $this->is_samsung_tablet() || $this->is_sony_ericsson() || $this->is_nintendo() || $this->is_tablet() || $this->is_ios() );
         }
         
@@ -516,7 +533,7 @@ if ( !class_exists( "Q_Browsers" ) ) {
          * @since 0.1
          */
         public function body_classes( $classes ) {
-            
+
             // grab the post object ##
             global $post;
             
@@ -585,7 +602,7 @@ if ( !class_exists( "Q_Browsers" ) ) {
          * @since 0.1
          */
         public function comments() {
-            
+
             // is the user logged in ? ##
             if ( is_user_logged_in() && current_user_can( 'manage_options' ) ) { // admins only ##
             
@@ -604,8 +621,79 @@ if ( !class_exists( "Q_Browsers" ) ) {
             }
 
         }
+
+
+        /*
+         * Check what type, agent & version is being used and return a boolean true if matches passed arguments
+         * 
+         * @since 0.4.8
+         */
+        public static function is( $args = array() ) {
+            
+            // load lightly ##
+            self::light_mode();
+
+            // use wp_pass_args to allow for defaults ##
+            // https://codex.wordpress.org/Function_Reference/wp_parse_args
+            $defaults = array (
+                'client'    => false, // "type" internally ##
+                'version'   => false,
+                'os'        => false // "agent" internally
+            );
+
+            $args = wp_parse_args( $args, $defaults );
+            
+            // check if anything sent ##
+            if ( ! $args["client"] && ! $args["version"] && ! $args["os"] ) {
+
+                // nothing to do ##
+                return false;
+
+            }
+
+            // remove empty values ##
+            #$args = array_diff( $args, array('') );
+            #wp_die( $args );
+
+            // instatiate class ##
+            $browsers = new Q_Browsers( true );
+
+            // get browsers ##
+            $browser = $browsers->browsers();
+
+            // test property ##
+            #var_dump( $browser );
+            #var_dump( $args );
+
+            if ( 
+                    $args["client"] == $browser["type"]
+                &&  $args["version"] == $browser["version"]
+                &&  $args["os"] == $browser["agent"]
+            ) {
+
+                // we've got a winner ##
+                return true;
+
+            }
+
+            // default to false ##
+            return false;
+
+        }
         
         
     }
     
+}
+
+
+// browsers API 
+if ( ! function_exists("is_browsers") ) {
+
+    function is_browsers( $args = array() ){
+
+        return Q_Browsers::is( $args );
+
+    }
+
 }
